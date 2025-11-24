@@ -1,0 +1,5 @@
+{
+  "name": "Tombala Çekiliş App",
+  "description": "A visually appealing and interactive Tombala (Bingo) drawing application. It features number drawing, a real-time board, sound effects, a printable card generator, and an optional surprise prize draw system.",
+  "requestFramePermissions": []
+}
