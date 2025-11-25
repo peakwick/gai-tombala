@@ -1,5 +1,7 @@
+
 import { useState, useRef, useEffect, useCallback, ChangeEvent } from 'react';
 import { useSoundManager, DrawSoundName, WinSoundName } from './useSoundManager';
+import { WinType } from '../types';
 
 const GAME_STATE_KEY = 'tombalaGameState';
 const SETTINGS_KEY = 'tombalaSettings';
@@ -32,7 +34,7 @@ const defaultSettings = {
     customLogo: null,
     selectedYear: new Date().getFullYear() + 1,
     autoDrawSpeed: 7000,
-    numberDrawSound: 'draw_blip_classic',
+    numberDrawSound: 'draw_retro',
     prizeDrawSound: 'draw_retro',
     winSound: 'win_musical',
 };
@@ -77,7 +79,7 @@ export const useTombalaGame = () => {
     const [showFirstDrawModal, setShowFirstDrawModal] = useState(false);
     const [showSettingsModal, setShowSettingsModal] = useState(false);
     const [confettiTrigger, setConfettiTrigger] = useState(0);
-    const [showTombalaWinnerModal, setShowTombalaWinnerModal] = useState(false);
+    const [activeWinType, setActiveWinType] = useState<WinType | null>(null);
 
     const { playSound, playSpinSound } = useSoundManager(soundEnabled);
     const allNumbers = Array.from({ length: 90 }, (_, i) => i + 1);
@@ -168,7 +170,7 @@ export const useTombalaGame = () => {
         setShowResetModal(false);
         setPrizeFlowActive(false);
         setIsAutoDrawEnabled(false);
-        setShowTombalaWinnerModal(false);
+        setActiveWinType(null);
     };
 
     const performDraw = useCallback(() => {
@@ -225,31 +227,23 @@ export const useTombalaGame = () => {
             return;
         }
         
+        // --- SURPRISE PRIZE ALGORITHM ---
         const prizesRemaining = maxPrizeCount - drawnPrizeCards.length;
-        const numbersRemaining = 90 - drawnNumbers.length;
+        const currentDrawnCount = drawnNumbers.length;
+        const TARGET_END_COUNT = 60; // Finish prizes before this number count
+        const START_CHECK_COUNT = 5; // Don't give prizes in the very beginning
 
-        if (totalCardsForPrize > 0 && prizesRemaining > 0 && numbersRemaining > 0 && drawnNumbers.length > 5) {
-            const drawnCount = drawnNumbers.length;
+        if (
+            totalCardsForPrize > 0 && 
+            prizesRemaining > 0 && 
+            currentDrawnCount > START_CHECK_COUNT && 
+            currentDrawnCount < TARGET_END_COUNT
+        ) {
+            const numbersRemainingUntilTarget = TARGET_END_COUNT - currentDrawnCount;
             
-            const effectiveGameSpan = 80;
-            const effectiveNumbersRemaining = Math.max(1, effectiveGameSpan - drawnCount);
-
-            if (prizesRemaining >= effectiveNumbersRemaining) {
-                setPrizeFlowActive(true);
-                setShowPrizeModal(true);
-                return;
-            }
-
-            let probabilityMultiplier = 1.0;
-            if (drawnCount <= 30) { 
-                probabilityMultiplier = 1.5;
-            } else if (drawnCount <= 60) {
-                probabilityMultiplier = 1.0;
-            } else {
-                probabilityMultiplier = 0.75;
-            }
-            
-            const prizeProbability = (prizesRemaining / effectiveNumbersRemaining) * probabilityMultiplier;
+            // Probability P = Remaining Prizes / Remaining Slots
+            // This ensures that if prizesRemaining == numbersRemainingUntilTarget, probability is 1.
+            const prizeProbability = prizesRemaining / numbersRemainingUntilTarget;
             
             if (Math.random() < prizeProbability) {
                 setPrizeFlowActive(true);
@@ -271,7 +265,7 @@ export const useTombalaGame = () => {
             clearInterval(autoDrawIntervalRef.current);
         }
 
-        const canAutoDraw = isAutoDrawEnabled && !isDrawing && drawnNumbers.length < 90 && !showPrizeModal && !showFirstDrawModal && !showResetModal && !showSettingsModal;
+        const canAutoDraw = isAutoDrawEnabled && !isDrawing && drawnNumbers.length < 90 && !showPrizeModal && !showFirstDrawModal && !showResetModal && !showSettingsModal && !activeWinType;
 
         if (canAutoDraw) {
             autoDrawIntervalRef.current = setInterval(() => {
@@ -284,7 +278,7 @@ export const useTombalaGame = () => {
                 clearInterval(autoDrawIntervalRef.current);
             }
         };
-    }, [isAutoDrawEnabled, isDrawing, drawnNumbers.length, showPrizeModal, showFirstDrawModal, showResetModal, showSettingsModal, autoDrawSpeed]);
+    }, [isAutoDrawEnabled, isDrawing, drawnNumbers.length, showPrizeModal, showFirstDrawModal, showResetModal, showSettingsModal, activeWinType, autoDrawSpeed]);
 
 
     const confirmPrizeSettings = (enablePrizes: boolean) => {
@@ -312,6 +306,7 @@ export const useTombalaGame = () => {
             if (availableCards.length === 0) {
                 clearInterval(animationInterval);
                 setIsDrawingPrize(false);
+                // Optionally handle no cards left
                 return;
             }
             const randomCard = availableCards[Math.floor(Math.random() * availableCards.length)];
@@ -329,34 +324,52 @@ export const useTombalaGame = () => {
         }, 50);
     };
 
+    const resetCurrentPrize = () => {
+        setCurrentPrizeCard(null);
+    };
+
+    const openManualPrizeModal = () => {
+        setShowPrizeModal(true);
+    };
+
     const toggleAutoDraw = () => setIsAutoDrawEnabled(prev => !prev);
     
     const claimFirstCinko = () => {
         if (!firstCinkoClaimed) {
-            setFirstCinkoClaimed(true);
-            setConfettiTrigger(c => c + 1);
-            playSound('win_cinko');
+            setActiveWinType('1. ÇİNKO');
         }
     };
 
     const claimSecondCinko = () => {
         if (!secondCinkoClaimed) {
-            setSecondCinkoClaimed(true);
-            setConfettiTrigger(c => c + 1);
-            playSound('win_cinko');
+            setActiveWinType('2. ÇİNKO');
         }
     };
 
     const claimTombala = () => {
         if (!tombalaClaimed) {
-            setTombalaClaimed(true);
-            setConfettiTrigger(c => c + 1);
-            setShowTombalaWinnerModal(true);
-            playSound(winSound);
+             setActiveWinType('TOMBALA');
         }
     };
 
-    const closeTombalaWinnerModal = () => setShowTombalaWinnerModal(false);
+    const closeWinModal = () => {
+        setActiveWinType(null);
+    }
+    
+    const completeWinProcess = () => {
+        if (activeWinType === '1. ÇİNKO') {
+            setFirstCinkoClaimed(true);
+            setConfettiTrigger(c => c + 1);
+        } else if (activeWinType === '2. ÇİNKO') {
+            setSecondCinkoClaimed(true);
+            setConfettiTrigger(c => c + 1);
+        } else if (activeWinType === 'TOMBALA') {
+            setTombalaClaimed(true);
+            setConfettiTrigger(c => c + 1);
+        }
+        setActiveWinType(null);
+    }
+
 
     return {
         state: {
@@ -383,11 +396,11 @@ export const useTombalaGame = () => {
             secondCinkoClaimed,
             tombalaClaimed,
             confettiTrigger,
-            showTombalaWinnerModal,
             numberDrawSound,
             prizeDrawSound,
             winSound,
             showSettingsModal,
+            activeWinType,
         },
         actions: {
             drawNumber,
@@ -402,6 +415,8 @@ export const useTombalaGame = () => {
             setTotalCardsForPrize,
             setMaxPrizeCount,
             drawPrizeCard,
+            resetCurrentPrize,
+            openManualPrizeModal,
             setShowPrizeModal,
             setCurrentPrizeCard,
             setShowResetModal,
@@ -411,11 +426,14 @@ export const useTombalaGame = () => {
             claimFirstCinko,
             claimSecondCinko,
             claimTombala,
-            closeTombalaWinnerModal,
+            closeWinModal,
+            completeWinProcess,
             setNumberDrawSound: (sound) => setNumberDrawSound(sound as DrawSoundName),
             setPrizeDrawSound: (sound) => setPrizeDrawSound(sound as DrawSoundName),
             setWinSound: (sound) => setWinSound(sound as WinSoundName),
             setShowSettingsModal,
+            playSound,
+            playSpinSound
         },
     };
 };

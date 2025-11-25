@@ -22,12 +22,13 @@ type CurrentNumberDisplayProps = {
   onClaimFirstCinko: () => void;
   onClaimSecondCinko: () => void;
   onClaimTombala: () => void;
+  onOpenManualPrizeModal: () => void;
+  totalCardsForPrize: number;
 };
 
 const CurrentNumberDisplay: React.FC<CurrentNumberDisplayProps> = ({
   currentNumber,
   isDrawing,
-  isAnimating,
   drawnNumbers,
   isAutoDrawEnabled,
   soundEnabled,

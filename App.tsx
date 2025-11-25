@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useTombalaGame } from './hooks/useTombalaGame';
 import CardGenerator from './components/CardGenerator';
@@ -7,8 +8,8 @@ import Board from './components/Board';
 import FirstDrawModal from './components/modals/FirstDrawModal';
 import PrizeModal from './components/modals/PrizeModal';
 import ResetModal from './components/modals/ResetModal';
-import TombalaWinnerModal from './components/modals/TombalaWinnerModal';
 import SettingsModal from './components/modals/SettingsModal';
+import WinnerSelectionModal from './components/modals/WinnerSelectionModal';
 import Confetti from './components/Confetti';
 
 export default function App() {
@@ -57,6 +58,8 @@ export default function App() {
           onClaimFirstCinko={actions.claimFirstCinko}
           onClaimSecondCinko={actions.claimSecondCinko}
           onClaimTombala={actions.claimTombala}
+          onOpenManualPrizeModal={actions.openManualPrizeModal}
+          totalCardsForPrize={state.totalCardsForPrize}
         />
         <Board
           drawnNumbers={state.drawnNumbers}
@@ -73,6 +76,28 @@ export default function App() {
         onConfirm={actions.confirmPrizeSettings}
       />
 
+      <ResetModal
+        isOpen={state.showResetModal}
+        onConfirm={actions.confirmReset}
+        onCancel={() => actions.setShowResetModal(false)}
+      />
+
+      <WinnerSelectionModal 
+        isOpen={!!state.activeWinType}
+        type={state.activeWinType}
+        onClose={actions.closeWinModal}
+        onComplete={actions.completeWinProcess}
+        playSound={actions.playSound}
+        playSpinSound={actions.playSpinSound}
+        winSound={state.winSound}
+        onOpenManualPrizeModal={actions.openManualPrizeModal}
+        totalCardsForPrize={state.totalCardsForPrize}
+      />
+      
+      {/* 
+        Moved PrizeModal below WinnerSelectionModal so it renders on top (due to stacking context) 
+        if opened from within WinnerSelectionModal.
+      */}
       <PrizeModal
         isOpen={state.showPrizeModal}
         isDrawing={state.isDrawingPrize}
@@ -81,18 +106,9 @@ export default function App() {
         drawnPrizeCardsCount={state.drawnPrizeCards.length}
         maxPrizeCount={state.maxPrizeCount}
         onDraw={actions.drawPrizeCard}
+        onResetCurrentPrize={actions.resetCurrentPrize}
         onClose={actions.closePrizeModal}
-      />
-
-      <ResetModal
-        isOpen={state.showResetModal}
-        onConfirm={actions.confirmReset}
-        onCancel={() => actions.setShowResetModal(false)}
-      />
-
-      <TombalaWinnerModal
-        isOpen={state.showTombalaWinnerModal}
-        onClose={actions.closeTombalaWinnerModal}
+        allowConsecutiveDraws={state.tombalaClaimed || state.activeWinType === 'TOMBALA'}
       />
 
       <SettingsModal
