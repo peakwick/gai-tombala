@@ -37,8 +37,8 @@ const Card: React.FC<CardProps> = ({ card, customLogo, selectedYear }) => {
         ))}
       </div>
 
-      <div className="mt-3 text-sm text-gray-500 text-center">
-        {customLogo ? `${selectedYear} Yılbaşı Tombalası` : `RICOH - ${selectedYear} Yılbaşı Tombalası`}
+      <div className="mt-3 text-sm text-gray-500 text-center uppercase tracking-tight">
+        {selectedYear} Yılbaşı Tombalası
       </div>
     </div>
   );

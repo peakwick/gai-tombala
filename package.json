@@ -1,7 +1,7 @@
 {
-  "name": "tombala-çekiliş-app",
-  "private": true,
-  "version": "0.0.0",
+  "name": "tombala-game",
+  "private": false,
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
