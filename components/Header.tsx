@@ -25,8 +25,8 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         ) : (
           <div className="bg-white rounded-lg px-4 py-2 shadow-lg">
-            <div className="text-xl font-bold text-red-600">RICOH</div>
-            <div className="text-xs text-gray-600 italic">imagine. change.</div>
+            <div className="text-xl font-bold text-red-600 uppercase tracking-wider">TOMBALA</div>
+            <div className="text-[10px] text-gray-500 uppercase font-medium">Yılbaşı Özel</div>
           </div>
         )}
         <div>
